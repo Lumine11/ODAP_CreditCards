@@ -1,0 +1,13 @@
+chạy hadoop: start-all.cmd
+
+chạy kafka
+    zookeeper-server-start.bat %KAFKA_CONFIG%\zookeeper.properties
+    kafka-server-start.bat %KAFKA_CONFIG%\server.properties
+    tạo topic: kafka-topics.bat --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic transactions
+    kiểm tra topic: kafka-topics.bat --list --bootstrap-server localhost:9092
+
+chạy producer: 
+chạy spark như consumer:  
+spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.1 --conf spark.pyspark.python=python consumer.py
+
+gặp bug: xóa thư mục D:/temp và C:/temp
