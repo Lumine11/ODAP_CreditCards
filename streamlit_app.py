@@ -4,249 +4,282 @@ from datetime import timedelta, datetime
 import matplotlib.pyplot as plt
 import requests
 import subprocess
+import altair as alt
 
-# Set page config
+# =================== Set page config =======================
 st.set_page_config(page_title="Transactions Dashboard", layout="wide")
 
-st.write("# Transactions Dashboard")
 
+# =================== Helper functions =======================
+@st.cache_data
+def load_data():
+    ''' 
+    Load data from HDFS and return a cleaned DataFrame 
+    Return a DataFrame with the following columns
+    '''
 
-#tao dataframe Card,Transaction Date,Transaction Time,Merchant Name,Merchant City,Amount VND
-dataframe = pd.DataFrame(columns=['Card','Transaction Date','Transaction Time','Merchant Name','Merchant City','Amount VND'])
-# Hàm chạy lệnh CLI HDFS và lấy dữ liệu
-def run_hdfs_command(command):
-    try:
-        # Sử dụng subprocess với shell=True để môi trường giống như dòng lệnh
-        process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        stdout, stderr = process.communicate()
-        
-        if process.returncode != 0:
-            st.error(f"Error: {stderr}")
-            return None
-        
-        return stdout
-    except Exception as e:
-        st.error(f"Exception: {e}")
-        return None
+    #tao dataframe Card,Transaction Date,Transaction Time,Merchant Name,Merchant City,Amount VND
+    dataframe = pd.DataFrame(columns=['Card','Transaction Date','Transaction Time','Merchant Name','Merchant City','Amount VND'])
 
-# Lệnh HDFS để đọc tất cả các tệp trong thư mục HDFS, nếu tên file có dạng part-*
-hdfs_command = "hadoop fs -cat /odap/output_1/part-*"
-
-# Chạy lệnh và lấy dữ liệu
-data = run_hdfs_command(hdfs_command)
-
-# Chạy lệnh và lấy dữ liệu
-raw_data = run_hdfs_command(hdfs_command)
-
-# Kiểm tra nếu có dữ liệu trả về
-if data:
-    # Xử lý dữ liệu thành danh sách
-    rows = data.strip().split("\n")
-    data_list = []
-
-    for line in rows:
+    # Hàm chạy lệnh CLI HDFS và lấy dữ liệu
+    def run_hdfs_command(command):
         try:
-            fields = line.split(",")
-            if len(fields) == 6:  # Kiểm tra có đủ trường dữ liệu
-                data_list.append({
-                    'Card': fields[0],
-                    'Transaction Date': fields[1],
-                    'Transaction Time': fields[2],
-                    'Merchant Name': fields[3],
-                    'Merchant City': fields[4],
-                    'Amount VND': fields[5]
-                })
+            # Sử dụng subprocess với shell=True để môi trường giống như dòng lệnh
+            process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            stdout, stderr = process.communicate()
+        
+            if process.returncode != 0:
+                st.error(f"Error: {stderr}")
+                return None
+        
+            return stdout
         except Exception as e:
-            st.error(f"Error processing line: {line}. Exception: {e}")
+            st.error(f"Exception: {e}")
+            return None
 
-    # Tạo DataFrame từ danh sách
-    dataframe = pd.DataFrame(data_list)
-else:
-    st.error("No data retrieved.")
+    # Lệnh HDFS để đọc tất cả các tệp trong thư mục HDFS, nếu tên file có dạng part-*
+    hdfs_command = "hadoop fs -cat /odap/output_1/part-*"
 
-# Xóa các dòng tiêu đề lặp lại
-cleaned_data = dataframe[dataframe['Transaction Date'] != 'Transaction Date']
+    # Chạy lệnh và lấy dữ liệu
+    data = run_hdfs_command(hdfs_command)
 
-# Reset lại chỉ mục
-cleaned_data.reset_index(drop=True, inplace=True)
+    # Chạy lệnh và lấy dữ liệu
+    raw_data = run_hdfs_command(hdfs_command)
 
-# Chuyen doi kieu du lieu Amount VND tu object sang float
-cleaned_data['Amount VND'] = cleaned_data['Amount VND'].astype(float)
+    # Kiểm tra nếu có dữ liệu trả về
+    if data:
+        # Xử lý dữ liệu thành danh sách
+        rows = data.strip().split("\n")
+        data_list = []
 
-# Chuyển đổi Transaction Date và Transaction Time sang datetime
-cleaned_data['Transaction DateTime'] = pd.to_datetime(cleaned_data['Transaction Date'] + ' ' + cleaned_data['Transaction Time'], format='%d/%m/%Y %H:%M:%S')
+        for line in rows:
+            try:
+                fields = line.split(",")
+                if len(fields) == 6:  # Kiểm tra có đủ trường dữ liệu
+                    data_list.append({
+                        'Card': fields[0],
+                        'Transaction Date': fields[1],
+                        'Transaction Time': fields[2],
+                        'Merchant Name': fields[3],
+                        'Merchant City': fields[4],
+                        'Amount VND': fields[5]
+                    })
+            except Exception as e:
+                st.error(f"Error processing line: {line}. Exception: {e}")
 
-# Hiển thị DataFrame trên Streamlit
-st.subheader("Cleaned Data")
-st.dataframe(cleaned_data)
+        # Tạo DataFrame từ danh sách
+        dataframe = pd.DataFrame(data_list)
+    else:
+        st.error("No data retrieved.")
 
-# Hiển thị tổng số giao dịch
-st.write("## Total Transactions")
-st.write(f"Total transactions: {len(cleaned_data)}")
+    # Xóa các dòng tiêu đề lặp lại
+    cleaned_data = dataframe[dataframe['Transaction Date'] != 'Transaction Date']
+
+    # Reset lại chỉ mục
+    cleaned_data.reset_index(drop=True, inplace=True)
+
+    # Chuyen doi kieu du lieu Amount VND tu object sang float
+    cleaned_data['Amount VND'] = cleaned_data['Amount VND'].astype(float)
+
+    # Chuyển đổi Transaction Date và Transaction Time sang datetime
+    cleaned_data['Transaction Date'] = pd.to_datetime(cleaned_data  ['Transaction Date'], format='%d/%m/%Y')
+
+    return cleaned_data
+
+def format_number(value, max_length=10):
+    # Chuyển số thành chuỗi có dấu phẩy phân cách
+    formatted = f"{value:,.0f}"
+    # Nếu chuỗi dài hơn max_length, rút gọn và thêm "..."
+    if len(formatted) > max_length:
+        return formatted[:max_length - 3] + "..."
+    return formatted
 
 
-# # Helper functions
-# @st.cache_data
-# def load_data():
-#     data = pd.read_csv("youtube_channel_data.csv")
-#     data['DATE'] = pd.to_datetime(data['DATE'])
-#     data['NET_SUBSCRIBERS'] = data['SUBSCRIBERS_GAINED'] - data['SUBSCRIBERS_LOST']
-#     return data
+def total_stats(df, time_frame='Daily'):
+    # Hàm nhóm dữ liệu theo thời gian
+    def group_data_by_time(column, agg_func="count"):
+        if time_frame == "Daily":
+            grouped = df.groupby(df["Transaction Date"].dt.date)[column].agg(agg_func).reset_index()
+        elif time_frame == "Monthly":
+            grouped = df.groupby(df["Transaction Date"].dt.to_period("M"))[column].agg(agg_func).reset_index()
+            grouped["Transaction Date"] = grouped["Transaction Date"].dt.to_timestamp()
+        elif time_frame == "Yearly":
+            grouped = df.groupby(df["Transaction Date"].dt.to_period("Y"))[column].agg(agg_func).reset_index()
+            grouped["Transaction Date"] = grouped["Transaction Date"].dt.to_timestamp()
+        return grouped
+    
+    total1, total2, total3, total4 = st.columns(4)
 
-# def custom_quarter(date):
-#     month = date.month
-#     year = date.year
-#     if month in [2, 3, 4]:
-#         return pd.Period(year=year, quarter=1, freq='Q')
-#     elif month in [5, 6, 7]:
-#         return pd.Period(year=year, quarter=2, freq='Q')
-#     elif month in [8, 9, 10]:
-#         return pd.Period(year=year, quarter=3, freq='Q')
-#     else:  # month in [11, 12, 1]
-#         return pd.Period(year=year if month != 1 else year-1, quarter=4, freq='Q')
+    with total1:
+        with st.container(border=True):
+            st.metric(label="Total Transactions", value=len(df), delta_color="normal")
 
-# def aggregate_data(df, freq):
-#     if freq == 'Q':
-#         df = df.copy()
-#         df['CUSTOM_Q'] = df['DATE'].apply(custom_quarter)
-#         df_agg = df.groupby('CUSTOM_Q').agg({
-#             'VIEWS': 'sum',
-#             'WATCH_HOURS': 'sum',
-#             'NET_SUBSCRIBERS': 'sum',
-#             'LIKES': 'sum',
-#             'COMMENTS': 'sum',
-#             'SHARES': 'sum',
-#         })
-#         return df_agg
-#     else:
-#         return df.resample(freq, on='DATE').agg({
-#             'VIEWS': 'sum',
-#             'WATCH_HOURS': 'sum',
-#             'NET_SUBSCRIBERS': 'sum',
-#             'LIKES': 'sum',
-#             'COMMENTS': 'sum',
-#             'SHARES': 'sum',
-#         })
+            # Biểu đồ cho Total Transactions
+            transactions_data = group_data_by_time("Amount VND", agg_func="count")
+           
+            # Tạo biểu đồ Altair và ẩn nhãn trục
+            chart = alt.Chart(transactions_data).mark_area(opacity=0.5, color='#7BD3EA').encode(
+                x=alt.X("Transaction Date:T", axis=alt.Axis(labels=False, title=None)),  # Ẩn nhãn trục X
+                y=alt.Y("Amount VND:Q", axis=alt.Axis(labels=False, title=None))  # Ẩn nhãn trục Y
+            ).properties(
+                width=800, height=100
+            )
 
-# def get_weekly_data(df):
-#     return aggregate_data(df, 'W-MON')
-
-# def get_monthly_data(df):
-#     return aggregate_data(df, 'M')
-
-# def get_quarterly_data(df):
-#     return aggregate_data(df, 'Q')
-
-# def format_with_commas(number):
-#     return f"{number:,}"
-
-# def create_metric_chart(df, column, color, chart_type, height=150, time_frame='Daily'):
-#     chart_data = df[[column]].copy()
-#     if time_frame == 'Quarterly':
-#         chart_data.index = chart_data.index.strftime('%Y Q%q ')
-#     if chart_type=='Bar':
-#         st.bar_chart(chart_data, y=column, color=color, height=height)
-#     if chart_type=='Area':
-#         st.area_chart(chart_data, y=column, color=color, height=height)
-
-# def is_period_complete(date, freq):
-#     today = datetime.now()
-#     if freq == 'D':
-#         return date.date() < today.date()
-#     elif freq == 'W':
-#         return date + timedelta(days=6) < today
-#     elif freq == 'M':
-#         next_month = date.replace(day=28) + timedelta(days=4)
-#         return next_month.replace(day=1) <= today
-#     elif freq == 'Q':
-#         current_quarter = custom_quarter(today)
-#         return date < current_quarter
-
-# def calculate_delta(df, column):
-#     if len(df) < 2:
-#         return 0, 0
-#     current_value = df[column].iloc[-1]
-#     previous_value = df[column].iloc[-2]
-#     delta = current_value - previous_value
-#     delta_percent = (delta / previous_value) * 100 if previous_value != 0 else 0
-#     return delta, delta_percent
-
-# def display_metric(col, title, value, df, column, color, time_frame):
-#     with col:
-#         with st.container(border=True):
-#             delta, delta_percent = calculate_delta(df, column)
-#             delta_str = f"{delta:+,.0f} ({delta_percent:+.2f}%)"
-#             st.metric(title, format_with_commas(value), delta=delta_str)
-#             create_metric_chart(df, column, color, time_frame=time_frame, chart_type=chart_selection)
+            # Hiển thị biểu đồ Altair
+            st.altair_chart(chart, use_container_width=True)
             
-#             last_period = df.index[-1]
-#             freq = {'Daily': 'D', 'Weekly': 'W', 'Monthly': 'M', 'Quarterly': 'Q'}[time_frame]
-#             if not is_period_complete(last_period, freq):
-#                 st.caption(f"Note: The last {time_frame.lower()[:-2] if time_frame != 'Daily' else 'day'} is incomplete.")
+    with total2:
+        with st.container(border=True):
+            formatted_value = format_number(df["Amount VND"].sum())
+            st.metric(label="Total Amount", value=f'{formatted_value} VND', delta_color="normal")
 
-# # Load data
-# df = load_data()
+            # Biểu đồ cho Total Amount
+            amount_data = group_data_by_time("Amount VND", agg_func="sum")
+            chart = alt.Chart(amount_data).mark_area(opacity=0.5, color='#F6D6D6').encode(
+                x=alt.X("Transaction Date:T", axis=alt.Axis(labels=False, title=None)),
+                y=alt.Y("Amount VND:Q", axis=alt.Axis(labels=False, title=None))
+            ).properties(
+                width=800, height=100
+            )
+            st.altair_chart(chart, use_container_width=True)
 
-# Set up input widgets
-# st.logo(image="images/streamlit-logo-primary-colormark-lighttext.png", 
-#         icon_image="images/streamlit-mark-color.png")
+    with total3:
+        with st.container(border=True):
+            st.metric(label="Total Merchants", value=df["Merchant Name"].nunique(), delta_color="normal")
 
+            # Biểu đồ cho Total Merchants
+            merchant_data = group_data_by_time("Merchant Name", agg_func="nunique")
+            chart = alt.Chart(merchant_data).mark_area(opacity=0.5, color='#F6F7C4').encode(
+                x=alt.X("Transaction Date:T", axis=alt.Axis(labels=False, title=None)),
+                y=alt.Y("Merchant Name:Q", axis=alt.Axis(labels=False, title=None))
+            ).properties(
+                width=800, height=100
+            )
+            st.altair_chart(chart, use_container_width=True)
+
+    with total4:
+        with st.container(border=True):
+            st.metric(label="Total Cities", value=df["Merchant City"].nunique(), delta_color="normal")
+            
+            # Biểu đồ cho Total Cities
+            city_data = group_data_by_time("Merchant City", agg_func="nunique")
+            chart = alt.Chart(city_data).mark_area(opacity=0.5, color='#A1EEBD').encode(
+                x=alt.X("Transaction Date:T", axis=alt.Axis(labels=False, title=None)),
+                y=alt.Y("Merchant City:Q", axis=alt.Axis(labels=False, title=None))
+            ).properties(
+                width=800, height=100
+            )
+            st.altair_chart(chart, use_container_width=True)
+    
+
+def plot_transaction_count_by_merchant(stats):
+    st.subheader("Total Transactions by Merchant")
+    line = alt.Chart(stats).mark_line().encode(
+        alt.X('Transaction Date', title='Time'),
+        alt.Y('Total Transaction', title='Total Transaction'),
+        color='Merchant Name'
+    ).properties(
+        width=400,
+        height=300
+    ).configure_title(
+        fontSize=15,
+        anchor='middle'
+    ).configure_axis(
+        labelFontSize=12,
+        titleFontSize=14
+    ).interactive()
+    st.altair_chart(line, use_container_width=True)
+    
+
+def plot_total_amount_by_merchant(stats):
+    st.subheader("Total Amount by Merchant")
+    line = alt.Chart(stats).mark_line().encode(
+        alt.X('Transaction Date', title='Time'),
+        alt.Y('Total Amount VND', title='Total Amount'),
+        color='Merchant Name'
+    ).properties(
+        width=400,
+        height=300
+    ).configure_title(
+        fontSize=15,
+        anchor='middle'
+    ).configure_axis(
+        labelFontSize=12,
+        titleFontSize=14
+    ).interactive()
+    st.altair_chart(line, use_container_width=True)
+
+# Hàm vẽ Line Chart theo thời gian 
+def vis(col, df, time_frame, number):
+    with col:
+        with st.container(border=True):
+            # Thống kê theo ngày
+            if time_frame == 'Daily':
+                transaction_df = df.groupby([df['Transaction Date'].dt.date, 'Merchant Name']).size().reset_index(name='Total Transaction')  
+
+                amount_df = df.groupby([df['Transaction Date'].dt.date, 'Merchant Name'])['Amount VND'].sum().reset_index(name='Total Amount VND')
+            # Thống kê theo tháng
+            elif time_frame == 'Monthly':
+                transaction_df = df.groupby([df['Transaction Date'].dt.to_period('M'), 'Merchant Name']).size().reset_index(name='Total Transaction')
+                transaction_df['Transaction Date'] = transaction_df['Transaction Date'].dt.to_timestamp()
+
+                amount_df = df.groupby([df['Transaction Date'].dt.to_period('M'), 'Merchant Name'])['Amount VND'].sum().reset_index(name='Total Amount VND')
+                amount_df['Transaction Date'] = amount_df['Transaction Date'].dt.to_timestamp()
+            # Thống kê theo năm
+            elif time_frame == 'Yearly':
+                transaction_df = df.groupby([df['Transaction Date'].dt.year, 'Merchant Name']).size().reset_index(name='Total Transaction')
+                transaction_df['Transaction Date'] = pd.to_datetime(transaction_df['Transaction Date'], format='%Y')
+
+                amount_df = df.groupby([df['Transaction Date'].dt.year, 'Merchant Name'])['Amount VND'].sum().reset_index(name='Total Amount VND')
+                amount_df['Transaction Date'] = pd.to_datetime(amount_df['Transaction Date'], format='%Y')
+            else:
+                raise ValueError("Invalid time_frame")
+            
+            # Vẽ biểu đồ
+            if number == 1:
+                plot_transaction_count_by_merchant(transaction_df)
+            elif number == 2:
+                plot_total_amount_by_merchant(amount_df)
+            
+
+# Load dataframe
+df = load_data()
+
+#======================= Sidebar =======================
 with st.sidebar:
-    st.title("YouTube Channel Dashboard")
+    st.title("Transactions Dashboard")
     st.header("⚙️ Settings")
     
-    # max_date = df['DATE'].max().date()
-    # default_start_date = max_date - timedelta(days=365)  # Show a year by default
-    # default_end_date = max_date
-    # start_date = st.date_input("Start date", default_start_date, min_value=df['DATE'].min().date(), max_value=max_date)
-    # end_date = st.date_input("End date", default_end_date, min_value=df['DATE'].min().date(), max_value=max_date)
-    # time_frame = st.selectbox("Select time frame",
-    #                           ("Daily", "Weekly", "Monthly", "Quarterly"),
-    # )
-    # chart_selection = st.selectbox("Select a chart type",
-    #                                ("Bar", "Area"))
+    time_frame = st.selectbox("Select time frame",
+                              ("Daily", "Monthly", "Yearly"), index=2)
 
-# # Prepare data based on selected time frame
-# if time_frame == 'Daily':
-#     df_display = df.set_index('DATE')
-# elif time_frame == 'Weekly':
-#     df_display = get_weekly_data(df)
-# elif time_frame == 'Monthly':
-#     df_display = get_monthly_data(df)
-# elif time_frame == 'Quarterly':
-#     df_display = get_quarterly_data(df)
+    all_merchants = df["Merchant Name"].unique()
+    select_all = st.checkbox("Select All Merchants", value=True)
 
-# # Display Key Metrics
-# st.subheader("All-Time Statistics")
+    if select_all:
+        selected_merchants = all_merchants
+    else:
+        selected_merchants = st.multiselect(
+            "Select Merchant(s):",
+            options=all_merchants,
+            default=[]
+        )    
 
-# metrics = [
-#     ("Total Subscribers", "NET_SUBSCRIBERS", '#29b5e8'),
-#     ("Total Views", "VIEWS", '#FF9F36'),
-#     ("Total Watch Hours", "WATCH_HOURS", '#D45B90'),
-#     ("Total Likes", "LIKES", '#7D44CF')
-# ]
+# Lọc dữ liệu theo Merchant Name được chọn
+filtered_df = df[df["Merchant Name"].isin(selected_merchants)] 
 
-# cols = st.columns(4)
-# for col, (title, column, color) in zip(cols, metrics):
-#     total_value = df[column].sum()
-#     display_metric(col, title, total_value, df_display, column, color, time_frame)
+# Display Key Metrics
+st.subheader("Key Metrics")
+total_stats(filtered_df, time_frame)
 
-# st.subheader("Selected Duration")
+# Display Key Metrics
+st.subheader("All-Time Statistics")
 
-# if time_frame == 'Quarterly':
-#     start_quarter = custom_quarter(start_date)
-#     end_quarter = custom_quarter(end_date)
-#     mask = (df_display.index >= start_quarter) & (df_display.index <= end_quarter)
-# else:
-#     mask = (df_display.index >= pd.Timestamp(start_date)) & (df_display.index <= pd.Timestamp(end_date))
-# df_filtered = df_display.loc[mask]
+col1, col2 = st.columns(2)
+vis(col1, filtered_df, time_frame, 1)
+vis(col2, filtered_df, time_frame, 2)
 
-# cols = st.columns(4)
-# for col, (title, column, color) in zip(cols, metrics):
-#     display_metric(col, title.split()[-1], df_filtered[column].sum(), df_filtered, column, color, time_frame)
+#================== DataFrame display =======================
+with st.expander('See DataFrame'):
+    st.dataframe(filtered_df)
 
-# # DataFrame display
-# with st.expander('See DataFrame (Selected time frame)'):
-#     st.dataframe(df_filtered)
-
-# Chart display
