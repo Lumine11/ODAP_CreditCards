@@ -2,7 +2,7 @@ chạy hadoop: start-all.cmd
 
 chạy kafka
     zookeeper-server-start.bat %KAFKA_CONFIG%\zookeeper.properties
-  s  kafka-server-start.bat %KAFKA_CONFIG%\server.properties
+    kafka-server-start.bat %KAFKA_CONFIG%\server.properties
     tạo topic: kafka-topics.bat --create --bootstrap-server localhost:9092 --replication-factor 1 --partitions 1 --topic transactions
     kiểm tra topic: kafka-topics.bat --list --bootstrap-server localhost:9092
 
@@ -15,4 +15,6 @@ gặp bug: xóa thư mục D:/temp và C:/temp
 === Các câu lệnh để chạy airflow
 source airflow_env/bin/activate
 airflow scheduler
+
+source airflow_env/bin/activate
 airflow webserver --port 8081

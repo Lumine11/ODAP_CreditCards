@@ -6,10 +6,6 @@ import signal
 import sys
 from confluent_kafka import Producer
 
-
-# .\bin\windows\zookeeper-server-start.bat .\config\zookeeper.properties
-# .\bin\windows\kafka-server-start.bat .\config\server.properties
-
 # Cấu hình producer
 producer_config = {
     'bootstrap.servers': 'localhost:9092',  # Địa chỉ Kafka broker
@@ -32,7 +28,7 @@ signal.signal(signal.SIGINT, shutdown_producer)
 
 # Đọc file CSV và gửi dữ liệu
 try:
-    with open('data\\credit_card_transactions-ibm_v2.csv', mode='r') as file:
+    with open('credit.csv', mode='r') as file:
         reader = csv.DictReader(file)
         for row in reader:
             producer.produce(topic, value=str(row).encode('utf-8'))

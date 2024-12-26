@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import timedelta, datetime
 import matplotlib.pyplot as plt
-import requests
 import subprocess
 import altair as alt
 
@@ -38,7 +37,7 @@ def load_data():
             return None
 
     # Lệnh HDFS để đọc tất cả các tệp trong thư mục HDFS, nếu tên file có dạng part-*
-    hdfs_command = "hadoop fs -cat /odap/current"
+    hdfs_command = "hadoop fs -cat /odap/current/part-*"
 
     # Chạy lệnh và lấy dữ liệu
     data = run_hdfs_command(hdfs_command)
