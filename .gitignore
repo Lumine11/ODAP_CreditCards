@@ -2,3 +2,4 @@ data/credit_card.zip
 data/User0_credit_card_transactions.csv
 data/credit_card_transactions-ibm_v2.csv
 new_checkpoint/*
+credit.csv
