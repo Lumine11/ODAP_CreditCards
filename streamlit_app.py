@@ -38,7 +38,7 @@ def load_data():
             return None
 
     # Lệnh HDFS để đọc tất cả các tệp trong thư mục HDFS, nếu tên file có dạng part-*
-    hdfs_command = "hadoop fs -cat /aida/merge/merged-*"
+    hdfs_command = "hadoop fs -cat /odap/current"
 
     # Chạy lệnh và lấy dữ liệu
     data = run_hdfs_command(hdfs_command)

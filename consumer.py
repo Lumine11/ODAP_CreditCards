@@ -118,7 +118,7 @@ processed_stream = process_data(parsed_data, exchange_rate)
 
 # Lưu trữ dữ liệu đã xử lý
 # output_path = "output_1"
-output_path = "hdfs://localhost:9000/aida/output"
+output_path = "hdfs://localhost:9000/odap/new"
 query = processed_stream.writeStream \
     .outputMode("append") \
     .format("csv") \
