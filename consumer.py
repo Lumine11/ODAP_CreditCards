@@ -4,6 +4,40 @@ from pyspark.sql.types import StringType
 from pyspark.sql.functions import col, lit, to_timestamp, regexp_replace, when, from_json, lpad, concat
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
 
+
+import requests
+import dbutils
+
+def get_exchange_rate(base_currency, target_currency):
+    # URL của Exchange Rates API
+    url = f"https://api.exchangerate-api.com/v4/latest/{base_currency}"
+    
+    try:
+        # Gửi yêu cầu GET đến API
+        response = requests.get(url)
+        response.raise_for_status()  # Nếu có lỗi HTTP, ném ra ngoại lệ
+        
+        # Chuyển đổi dữ liệu JSON thành dictionary
+        data = response.json()
+        
+        # Lấy tỉ giá từ dữ liệu
+        exchange_rate = data['rates'].get(target_currency)
+
+        
+        
+        if exchange_rate:
+            print(f"1 {base_currency} = {exchange_rate} {target_currency}")
+            return exchange_rate
+        else:
+            print(f"Không tìm thấy tỉ giá cho {target_currency}.")
+    
+    except requests.exceptions.RequestException as e:
+        print(f"Lỗi khi kết nối đến API: {e}")
+
+
+
+
+
 # Tạo SparkSession
 spark = SparkSession.builder \
     .appName("KafkaConsumer") \
@@ -24,7 +58,7 @@ df = spark.readStream \
 data = df.select(col("value").cast(StringType()))
 
 # # Tỷ giá hối đoái (giả sử cố định ở đây, thực tế sẽ lấy từ API hoặc cập nhật hàng ngày)
-exchange_rate = 24000  # 1 USD = 24,000 VND
+exchange_rate = get_exchange_rate("USD", "VND")
 
 schema = StructType([
         StructField("User", StringType(), True),
@@ -94,7 +128,14 @@ query = processed_stream.writeStream \
 query.awaitTermination()
 
 
+
+
+
 # query = processed_stream.writeStream \
 #     .outputMode("append") \
 #     .format("console") \
 #     .start()
+
+
+# spark-submit --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.3.1 --conf spark.pyspark.python=python Consumer.py
+

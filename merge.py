@@ -19,10 +19,10 @@ def run_hdfs_command(command):
         return None
 
 # Lệnh HDFS để đọc tất cả các tệp trong thư mục HDFS, nếu tên file có dạng part-*
-hdfs_command = "hadoop fs -cat /odap/output_1/part-*"
+hdfs_command = "hadoop fs -cat /aida/output/part-*"
 
 # 1. Lấy danh sách file trong /odap/output_1
-list_command = "hdfs dfs -ls /odap/output_1"
+list_command = "hdfs dfs -ls /aida/output"
 output = run_hdfs_command(list_command)
 
 if output:
@@ -37,22 +37,37 @@ if output:
     if files_to_merge:
         print("Files to merge:", files_to_merge)
 
-        # 3. Merge các file 
-        files_str = " ".join(files_to_merge)
-        merge_command = f"hadoop fs -cat {files_str} | hadoop fs -put - /odap/merge/merged_1.csv"
-        merge_output = run_hdfs_command(merge_command)
+        # timestamp = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+        # timestamp_String = str(timestamp)
+        # chia nhỏ thoe nhóm 10 file
+        step = 100
+        for i in range(0, len(files_to_merge), step):
+            if i+step > len(files_to_merge):
+                files = files_to_merge[i:]
+            else:
+                files = files_to_merge[i:i+step]
 
-        if merge_output is not None:
-            print("Files merged successfully.")
+            files_str = " ".join(files)
+            # move file to merge
+            move_command = f"hadoop fs -mv {files_str} /aida/merge"
+            move_output = run_hdfs_command(move_command)
+            if move_output is not None:
+                print(f"Files moved successfully.")
+            else:
+                print(f"Failed to move files {i}-{i+step}.")
+            
+            # merge_command = f"hadoop fs -cat {files_str} | hadoop fs -put - /aida/merge/merged-{timestamp_String}-{i}.csv"
+            # merge_output = run_hdfs_command(merge_command)
 
-            # 4. Xóa các file đã merge
-            delete_command = f"hadoop fs -rm {files_str}"
-            delete_output = run_hdfs_command(delete_command)
-
-            if delete_output is not None:
-                print("Old files deleted successfully.")
-        else:
-            print("Failed to merge files.")
+            # if merge_output is not None:
+            #     print(f"Files {i}-{i+step} merged successfully.")
+            # else:
+            #     print(f"Failed to merge files {i}-{i+step}.")
+        # # 3. Merge các file 
+        # files_str = " ".join(files_to_merge)
+        # merge_command = f"hadoop fs -cat {files_str} | hadoop fs -put - /aida/merge/merged-{timestamp_String}.csv"
+        # merge_output = run_hdfs_command(merge_command)
+            
     else:
         print("No files to merge.")
 else:

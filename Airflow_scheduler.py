@@ -1,10 +1,10 @@
 ''' cái này để chạy trong máy ảo'''
 from airflow import DAG
-from airflow.operators.bash_operator import BashOperator
+from airflow.operators.bash import BashOperator
 from datetime import datetime, timedelta
 
 # Đường dẫn tới ứng dụng Streamlit
-STREAMLIT_APP_PATH = "D:/sources/Github/ODAP_CreditCards/streamlit_app.py"
+STREAMLIT_APP_PATH = "D:/sources/Github/ODAP_CreditCards/merge.py"
 
 default_args = {
     'owner': 'airflow',
@@ -16,9 +16,9 @@ default_args = {
 }
 
 with DAG(
-    'run_streamlit',
+    'run_merge_script',
     default_args=default_args,
-    description='Run Streamlit app using BashOperator',
+    description='Run Merge app using BashOperator',
     schedule_interval=timedelta(days=1),  # Lập lịch hàng ngày
     start_date=datetime(2024, 12, 25),
     catchup=False,
@@ -26,8 +26,9 @@ with DAG(
     
     # Chạy lệnh Streamlit
     run_streamlit_cmd = BashOperator(
-        task_id='run_streamlit_task',
-        bash_command=f'streamlit run {STREAMLIT_APP_PATH}',
+        task_id='run_merge_task',
+        # python là lệnh để chạy file Python tùy thuộc vào biến môi trường đã được cài trong máy
+        bash_command=f'python {STREAMLIT_APP_PATH}',
     )
 
-    run_streamlit_cmd
+run_streamlit_cmd
