@@ -88,6 +88,7 @@ def parse_json(data,schema):
 def process_data(df, exchange_rate):
     return df \
         .filter(col("Is Fraud?") == "No") \
+        .filter(col("Use Chip") != "Online Transaction") \
         .withColumn("Transaction Time", col("Time")) \
         .withColumn("Amount", regexp_replace(col("Amount"), "\\$", "").cast(DoubleType())) \
         .withColumn("Amount VND", col("Amount") * lit(exchange_rate)) \
