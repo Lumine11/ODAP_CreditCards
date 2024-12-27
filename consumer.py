@@ -84,7 +84,6 @@ def process_data(df, exchange_rate):
     return df \
         .filter(col("Is Fraud?") == "No") \
         .filter(col("Use Chip") != "Online Transaction") \
-        .withColumn("Transaction Time", col("Time")) \
         .withColumn("Amount", regexp_replace(col("Amount"), "\\$", "").cast(DoubleType())) \
         .withColumn("Amount VND", col("Amount") * lit(exchange_rate)) \
         .withColumn(
@@ -131,7 +130,8 @@ def count_and_save_batch(batch_df, batch_id):
     # Đếm số dòng trong batch
     row_count = batch_df.count()
     print(f"Batch ID: {batch_id}, Row Count: {row_count}")
-    
+    #in ra batch
+    batch_df.show()
     # Lưu batch vào HDFS
     output_path = "hdfs://localhost:9000/odap/new"
     batch_df.write.mode("append").csv(output_path)
