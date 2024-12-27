@@ -2,7 +2,6 @@ import streamlit as st
 import pandas as pd
 from datetime import timedelta, datetime
 import matplotlib.pyplot as plt
-import requests
 import subprocess
 import altair as alt
 
@@ -11,7 +10,7 @@ st.set_page_config(page_title="Transactions Dashboard", layout="wide")
 
 
 # =================== Helper functions =======================
-@st.cache_data
+# @st.cache_data
 def load_data():
     ''' 
     Load data from HDFS and return a cleaned DataFrame 
@@ -38,7 +37,7 @@ def load_data():
             return None
 
     # Lệnh HDFS để đọc tất cả các tệp trong thư mục HDFS, nếu tên file có dạng part-*
-    hdfs_command = "hadoop fs -cat /odap/current"
+    hdfs_command = "hadoop fs -cat /odap/current/part-*"
 
     # Chạy lệnh và lấy dữ liệu
     data = run_hdfs_command(hdfs_command)
@@ -210,8 +209,8 @@ def plot_total_amount_by_merchant(stats):
     st.altair_chart(line, use_container_width=True)
 
 # Hàm vẽ Line Chart theo thời gian 
-def vis(col, df, time_frame, number):
-    with col:
+def vis(df, time_frame, number):
+    # with col:
         with st.container(border=True):
             # Thống kê theo ngày
             if time_frame == 'Daily':
@@ -269,15 +268,15 @@ with st.sidebar:
 filtered_df = df[df["Merchant Name"].isin(selected_merchants)] 
 
 # Display Key Metrics
-st.subheader("Key Metrics")
+st.subheader("Overview")
 total_stats(filtered_df, time_frame)
 
 # Display Key Metrics
 st.subheader("All-Time Statistics")
 
 col1, col2 = st.columns(2)
-vis(col1, filtered_df, time_frame, 1)
-vis(col2, filtered_df, time_frame, 2)
+vis(filtered_df, time_frame, 1)
+vis(filtered_df, time_frame, 2)
 
 #================== DataFrame display =======================
 with st.expander('See DataFrame'):

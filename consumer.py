@@ -6,7 +6,6 @@ from pyspark.sql.types import StructType, StructField, StringType, IntegerType, 
 
 
 import requests
-import dbutils
 
 def get_exchange_rate(base_currency, target_currency):
     # URL của Exchange Rates API
@@ -33,10 +32,6 @@ def get_exchange_rate(base_currency, target_currency):
     
     except requests.exceptions.RequestException as e:
         print(f"Lỗi khi kết nối đến API: {e}")
-
-
-
-
 
 # Tạo SparkSession
 spark = SparkSession.builder \
@@ -114,22 +109,44 @@ def process_data(df, exchange_rate):
             col("Amount VND")
         )
 
+# parsed_data = parse_json(data,schema)
+# processed_stream = process_data(parsed_data, exchange_rate)
+
+# # Lưu trữ dữ liệu đã xử lý
+# # output_path = "output_1"
+# output_path = "hdfs://localhost:9000/odap/new"
+# query = processed_stream.writeStream \
+#     .outputMode("append") \
+#     .format("csv") \
+#     .option("path", output_path) \
+#     .option("checkpointLocation", "new_checkpoint") \
+#     .start()
+# query.awaitTermination()
+
+
+
+
+# Hàm xử lý từng batch
+def count_and_save_batch(batch_df, batch_id):
+    # Đếm số dòng trong batch
+    row_count = batch_df.count()
+    print(f"Batch ID: {batch_id}, Row Count: {row_count}")
+    
+    # Lưu batch vào HDFS
+    output_path = "hdfs://localhost:9000/odap/new"
+    batch_df.write.mode("append").csv(output_path)
+
 parsed_data = parse_json(data,schema)
 processed_stream = process_data(parsed_data, exchange_rate)
 
-# Lưu trữ dữ liệu đã xử lý
-# output_path = "output_1"
-output_path = "hdfs://localhost:9000/odap/new"
+# Lưu trữ dữ liệu đã xử lý và đếm số dòng
 query = processed_stream.writeStream \
     .outputMode("append") \
-    .format("csv") \
-    .option("path", output_path) \
+    .foreachBatch(count_and_save_batch) \
     .option("checkpointLocation", "new_checkpoint") \
     .start()
+
 query.awaitTermination()
-
-
-
 
 
 # query = processed_stream.writeStream \
