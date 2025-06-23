@@ -1,23 +1,24 @@
-# Hệ Thống QUản Lý Dữ Liệu Giao Dịch Thông Qua Thẻ Tín Dụng (Credit Card).
+# Credit Card Transaction Data Management System
 
-## Mô tả bài toán  
+## Problem Description
 
-Một công ty tài chính muốn xây dựng hệ thống quản lý dữ liệu giao dịch thông qua thẻ tín dụng (credit card). Dữ liệu được phát sinh từ các máy POS đặt tại các cửa hàng mua sắm, nhà hàng, hoặc bất kỳ nơi nào thanh toán không dùng tiền mặt. Công ty muốn xây dựng hệ thống xử lý dữ liệu theo thời gian thực. Khi một giao dịch được phát sinh, dữ liệu được gửi đến hệ thống, tiến hành kiểm tra dữ liệu có lỗi hay không? Nếu `Is Fraud = Yes`, xác định lỗi và giao dịch này xem như không thành công, không cần xử lý tiếp.  
+A financial company wants to build a real-time credit card transaction data management system. Transaction data is generated from POS machines at retail stores, restaurants, and other cashless payment locations. The system needs to process data in real-time. When a transaction occurs, the data is sent to the system to check for errors. If Is Fraud = Yes, the transaction is flagged as failed and no further processing is required.
 
-Khi một giao dịch thành công, hệ thống sẽ lưu trữ các thông tin sau:  
-- **Credit Card**: Thông tin thẻ tín dụng.  
-- **Ngày giao dịch**: Định dạng `dd/mm/yyyy`.  
-- **Thời gian**: Định dạng `hh:mm:ss`.  
-- **Merchant name**: Tên nơi xảy ra giao dịch.  
-- **Merchant City**: Thành phố nơi giao dịch.  
-- **Số tiền**: Chuyển sang VNĐ theo tỉ giá được cập nhật mỗi ngày.  
+For successful transactions, the system will store the following information:
+- **Credit Card**: Credit card details
+- **Ngày giao dịch**: Format `dd/mm/yyyy`.  
+- **Thời gian**: Format `hh:mm:ss`.  
+- **Merchant name**: Name of the business where the transaction occurred
+- **Merchant City**: City where the transaction took place
+- **Số tiền**: Converted to VND using daily exchange rates
 
-Cuối ngày, tất cả giao dịch sẽ được thống kê như sau:  
-- Tổng giá trị giao dịch theo từng `merchant name`.  
-- Đếm số lượng giao dịch của mỗi `merchant name`.  
-- Thống kê theo ngày, tháng và năm.  
+At the end of each day, all transactions will be summarized as follows:
+- Total transaction value by `merchant name`.  
+- Transaction count by `merchant name`.  
+- Daily, monthly, and yearly statistics
 
-Tất cả thông tin thống kê này sẽ được trực quan hóa qua công cụ hoặc hệ thống chuyên biệt.
+All statistical information will be visualized using specialized tools or systems.
+
 ## Thông tin nhóm
 - Trần Thị Kim Trinh - 21120580
 - Đinh Hoàng Trung - 21120582
@@ -25,7 +26,7 @@ Tất cả thông tin thống kê này sẽ được trực quan hóa qua công 
 
 
 ## Data Source
-Được cung cấp bởi giảng viên thực hành gồm File CSV chứa thông tin giao dịch
+Provided by the instructor as a CSV file containing transaction records
 
 ### Prerequisites
 - JDK (Java Development Kit)
@@ -37,21 +38,20 @@ Tất cả thông tin thống kê này sẽ được trực quan hóa qua công 
 
 ### Setup Instructions
 
-## Kiến trúc hệ thống
-1. Công nghệ sử dụng
-   - Truyền tải dữ liệu: Apache Kafka
-      - Producer: Đọc dữ liệu từ file CSV và gửi đến topic "transaction" (độ trễ 1-3s)
-      - Consumer: Nhận dữ liệu và xử lý bằng Spark Streaming
-   - Xử lý dữ liệu: Apache Spark Streaming
-      - Parse dữ liệu JSON thành DataFrame
-      - Lọc giao dịch online và không phải Fraud
-      - Chuyển đổi định dạng ngày/thời gian và tiền tệ (sang VND)
-      - Chọn các trường quan trọng để lưu trữ
-   - Lưu trữ dữ liệu: Hadoop
-      - Thư mục new: Chứa dữ liệu mới (cập nhật hàng ngày)
-      - Thư mục current: Chứa dữ liệu đã xử lý để trực quan hóa
-   - Trực quan hóa: Streamlit
-   - Lập lịch công việc: Apache Airflow
+## System Architecture
+1. Data Pipeline: Apache Kafka
+   - Producer: Reads data from CSV file and sends to "transaction" topic (1-3s delay)
+   - Consumer: Receives data and processes with Spark Streaming
+2. Data Processing: Apache Spark Streaming
+   - Parse JSON data into DataFrame
+   - Filter online transactions and non-Fraud transactions
+   - Convert date/time formats and currency (to VND)
+   - Select key fields for storage
+3. Data Storage: Hadoop
+   - New directory: Stores newly updated daily data
+   - Current directory: Stores processed data for visualization
+4. Visualization: Streamlit
+5. Workflow Scheduling: Apache Airflow
 
 ## Contributing
 1. Fork the repository
@@ -61,14 +61,13 @@ Tất cả thông tin thống kê này sẽ được trực quan hóa qua công 
 5. Open a Pull Request
 
 ## References
-1. Tài liệu chính thức của Apache Kafka, Spark, Hadoop
-2. Tài liệu hướng dẫn Streamlit và Airflow
+1. Official documentation for Apache Kafka, Spark, Hadoop
+2. Streamlit and Airflow guides
 
-## Giấy phép
-Dự án được thực hiện cho mục đích học tập trong khuôn khổ môn học "Xử Lí Phân Tích Dữ Liệu Trực Tuyến" tại Trường Đại Học Khoa Học Tự Nhiên - ĐHQG HCM.
+## License
+This project was created for educational purposes as part of the "Real-time Data Processing and Analysis" course at University of Science - VNUHCM.
 
 ## Acknowledgments
 - Course Instructors:
-  - Hồ Thị Hoàng Vy (hthvy@fit.hcmus.edu.vn)
-  - Tiết Gia Hồng (tghong@fit.hcmus.edu.vn)
+  - Nguyễn Trần Minh Thư (ntmthu@fit.hcmus.edu.vn)
   - Phạm Minh Tú (pmtu@fit.hcmus.edu.vn)
