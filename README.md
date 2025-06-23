@@ -18,6 +18,8 @@ At the end of each day, all transactions will be summarized as follows:
 - Daily, monthly, and yearly statistics
 
 All statistical information will be visualized using specialized tools or systems.
+![image](https://github.com/user-attachments/assets/79f7e49d-e34d-47e8-b7c5-72699c8bff7f)
+
 
 ## Thông tin nhóm
 - Trần Thị Kim Trinh - 21120580
@@ -39,6 +41,8 @@ Provided by the instructor as a CSV file containing transaction records
 ### Setup Instructions
 
 ## System Architecture
+![{223561E0-7D36-410F-AABE-69D0E7B456BB}](https://github.com/user-attachments/assets/ab6284bb-6651-4dbd-bcc3-586a13c3c989)
+
 1. Data Pipeline: Apache Kafka
    - Producer: Reads data from CSV file and sends to "transaction" topic (1-3s delay)
    - Consumer: Receives data and processes with Spark Streaming
