@@ -25,9 +25,7 @@ Tất cả thông tin thống kê này sẽ được trực quan hóa qua công 
 
 
 ## Data Source
-
-
-## Technical Requirements
+Được cung cấp bởi giảng viên thực hành gồm File CSV chứa thông tin giao dịch
 
 ### Prerequisites
 - JDK (Java Development Kit)
@@ -39,32 +37,21 @@ Tất cả thông tin thống kê này sẽ được trực quan hóa qua công 
 
 ### Setup Instructions
 
-
-## Chức năng và 
-1. 
-
-2. Key Reports
-   - State-wise AQI trends
-   - Quarterly analysis
-   - Air quality category distribution
-   - Regional comparisons
-   - Special focus on Hawaii, Alaska, Illinois, and Delaware
-
-3. Data Mining
-   - Predictive models for future air quality
-   - Pattern analysis and trending
-   - Seasonal variations study
-
-## Project Timeline
-- Project Start: 
-- Midterm Q&A: 
-- Final Submission: 
-- Final Q&A: 
-
-## Documentation
-- Technical documentation is available in `/docs/`
-- Presentation video (10 minutes) available in `/docs/presentations/`
-- Full analysis report in `/docs/reports/`
+## Kiến trúc hệ thống
+1. Công nghệ sử dụng
+   - Truyền tải dữ liệu: Apache Kafka
+      - Producer: Đọc dữ liệu từ file CSV và gửi đến topic "transaction" (độ trễ 1-3s)
+      - Consumer: Nhận dữ liệu và xử lý bằng Spark Streaming
+   - Xử lý dữ liệu: Apache Spark Streaming
+      - Parse dữ liệu JSON thành DataFrame
+      - Lọc giao dịch online và không phải Fraud
+      - Chuyển đổi định dạng ngày/thời gian và tiền tệ (sang VND)
+      - Chọn các trường quan trọng để lưu trữ
+   - Lưu trữ dữ liệu: Hadoop
+      - Thư mục new: Chứa dữ liệu mới (cập nhật hàng ngày)
+      - Thư mục current: Chứa dữ liệu đã xử lý để trực quan hóa
+   - Trực quan hóa: Streamlit
+   - Lập lịch công việc: Apache Airflow
 
 ## Contributing
 1. Fork the repository
@@ -74,15 +61,14 @@ Tất cả thông tin thống kê này sẽ được trực quan hóa qua công 
 5. Open a Pull Request
 
 ## References
-1. [Air Quality Index - Wikipedia](https://en.wikipedia.org/wiki/Air_quality_index)
-2. [US Counties Database](https://simplemaps.com/data/us-counties)
-3. [EPA AirData Documentation](https://www.epa.gov/outdoor-air-quality-data)
+1. Tài liệu chính thức của Apache Kafka, Spark, Hadoop
+2. Tài liệu hướng dẫn Streamlit và Airflow
 
-## License
-This project is created for educational purposes as part of the CSC12107 – Information System for Business Intelligence course at University of Science - VNUHCM.
+## Giấy phép
+Dự án được thực hiện cho mục đích học tập trong khuôn khổ môn học "Xử Lí Phân Tích Dữ Liệu Trực Tuyến" tại Trường Đại Học Khoa Học Tự Nhiên - ĐHQG HCM.
 
 ## Acknowledgments
 - Course Instructors:
   - Hồ Thị Hoàng Vy (hthvy@fit.hcmus.edu.vn)
   - Tiết Gia Hồng (tghong@fit.hcmus.edu.vn)
-  - Nguyễn Ngọc Minh Châu (nnmchau@fit.hcmus.edu.vn) 
+  - Phạm Minh Tú (pmtu@fit.hcmus.edu.vn)
